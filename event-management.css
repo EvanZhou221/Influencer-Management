@@ -7,6 +7,12 @@ body{
     margin: 3%;
 }
 
+.btn{
+    margin: 1%;
+}
+
+/*modal*/
+
 .modal-row{
     margin: 15px;
 }

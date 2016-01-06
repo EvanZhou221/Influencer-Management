@@ -4,15 +4,189 @@
 
 var singleEventJsonObj;
 var events;
-var tags = [];
+//var tags = [];
 
-function getEventEntry(name, timeBegin, timeEnd, briefIntro ){
-    return "<td>" + timeBegin + "</td>" +
+var eventJSON;
+var oldJSON;
+
+var ROWS_PER_PAGE=3;
+var current_page=0;
+
+var sortOrder = 0;//0 means asc, 1 means desc
+
+
+function showPage(page_num)
+{
+  var table_body_html = "";
+  for(var i =page_num*ROWS_PER_PAGE;i<eventJSON.events.length && i<page_num*ROWS_PER_PAGE+ROWS_PER_PAGE;i++)
+  {
+    table_body_html+="<tr>";
+    table_body_html+=getEventEntry(eventJSON.events[i].id,eventJSON.events[i].name,eventJSON.events[i].time_begin,eventJSON.events[i].time_end,eventJSON.events[i].brief);
+    table_body_html+="</tr>";
+  }
+  jQuery("#tableBody").html(table_body_html);
+  if(current_page == 0)
+    jQuery("#previous_button").css("display","none");
+  else
+    jQuery("#previous_button").css("display","inline");
+  if((current_page+1)*ROWS_PER_PAGE >= eventJSON.events.length)
+    jQuery("#next_button").css("display","none");
+  else
+    jQuery("#next_button").css("display","inline");
+}
+
+function previousPage()
+{
+  if(current_page == 0)
+    return;
+  current_page--;
+  showPage(current_page);
+}
+
+function nextPage()
+{
+  if((current_page+1)*ROWS_PER_PAGE >= eventJSON.events.length)
+    return;
+  current_page++;
+  showPage(current_page);
+}
+
+function sortTable(event)
+{
+  var keyword = jQuery(event.target).attr("id");
+  eventJSON.events.sort(function(a,b){
+    if(keyword == "name_head")
+    {
+      if(sortOrder == 0)
+      {
+        if(a.name<b.name)
+          return -1;
+        if(a.name>b.name)
+          return 1;
+        return 0;
+      }
+      else
+      {
+        if(a.name<b.name)
+          return 1;
+        if(a.name>b.name)
+          return -1;
+        return 0;
+      }
+    }
+    if(keyword == "time_begin_head")
+    {
+      if(sortOrder == 0)
+      {
+        if(a.time_begin<b.time_begin)
+          return -1;
+        if(a.time_begin>b.time_begin)
+          return 1;
+        return 0;
+      }
+      else
+      {
+        if(a.time_begin<b.time_begin)
+          return 1;
+        if(a.time_begin>b.time_begin)
+          return -1;
+        return 0;
+      }
+    }
+    if(keyword == "time_end_head")
+    {
+      if(sortOrder == 0)
+      {
+        if(a.time_end<b.time_end)
+          return -1;
+        if(a.time_end>b.time_end)
+          return 1;
+        return 0;
+      }
+      else
+      {
+        if(a.time_end<b.time_end)
+          return 1;
+        if(a.time_end>b.time_end)
+          return -1;
+        return 0;
+      }
+    }
+    if(keyword == "brief_head")
+    {
+      if(sortOrder == 0)
+      {
+        if(a.brief<b.brief)
+          return -1;
+        if(a.brief>b.brief)
+          return 1;
+        return 0;
+      }
+      else
+      {
+        if(a.brief<b.brief)
+          return 1;
+        if(a.brief>b.brief)
+          return -1;
+        return 0;
+      }
+    }
+  });
+  if(sortOrder == 0)
+    sortOrder = 1;
+  else
+    sortOrder = 0;
+  showPage(0);
+}
+
+function UpLoadFile(event)
+{
+    var fd = new FormData();
+    fd.append("fileToUpload", event.target.files[0]);
+    jQuery.ajax({
+        type:"POST",
+        url:"uploadfile.php",
+        processData: false,
+        contentType: false,
+        data:fd,
+        async: false,
+        success:function(result)
+        {
+            var target = event.target;
+            var parent = target.parentElement;
+            var imgtag = parent.getElementsByTagName("img")[0];
+            jQuery(imgtag).attr("src",result);
+        },
+        error:function()
+        {
+            alert("error!");
+        }
+    });
+}
+
+function getEventEntry(id,name, timeBegin, timeEnd, briefIntro ){
+    return "<td>" + name + "</td>" +
+        "<td>" + timeBegin + "</td>" +
         "<td>" + timeEnd + "</td>" +
         "<td>" + briefIntro + "</td>" +
-        "<button class=\"btn btn-link\" id=\"editbutton\" data-toggle=\"modal\" data-target=\"#myModal\" onclick=\"viewandedit(event)\">view&amp;edit </button>" +
-        "<button class=\"btn btn-link\" id=\"deletebutton\" onclick=\"deleteentry(event)\">disable</button></td>"
+        "<td><button class=\"btn btn-link\" id=\"editbutton"+id+"\" data-toggle=\"modal\" data-target=\"#myModal\" onclick=\"viewandedit(event)\">view&amp;edit </button></td>";
 }
+
+function viewandedit(event)
+{
+  var id_str = jQuery(event.target).attr("id").substring(jQuery(event.target).attr("id").indexOf("editbutton")+10);//get the influencer's id
+  var id = parseInt(id_str);
+  var i;
+  for(i = 0;i<eventJSON.events.length;i++)
+  {
+    if(eventJSON.events[i].id == id)
+      break;
+  }
+  var currentEvent = eventJSON.events[i];
+  readFromJson(currentEvent);
+}
+
+
 function getChunk(imgSrc, mainTitle, subTitle, link){
     return "<div class=\"chunk_div\">" +
     "<input type=\"file\" class=\"fileUpload\" onchange='UpLoadFile(event)'>" +
@@ -20,31 +194,36 @@ function getChunk(imgSrc, mainTitle, subTitle, link){
     "Main Title: <input type=\"text\" class=\"entry_input\" value=\""+ mainTitle +"\">" +
     "Subtitle: <input type=\"text\" class=\"entry_input\" value=\""+ subTitle +"\">" +
     "Link: <input type=\"text\" class=\"entry_input\" value=\""+ link +"\">" +
-    "<button class=\"remove_chunk_buttons\" onclick=\"test()\">Remove</button>" +
-    "</div>"
+    "<button class=\"remove_chunk_buttons\" onclick=\"closestDiv()\">Remove</button>" +
+    "</div>";
 }
 
-var eventsJsonObj = {
-    "id":0,
-    "name": "Test Name",
-    "time_begin":"2015-01-01T01:00",
-    "time_end":"2015-12-31T12:59",
-    "brief":"lalalala brief description",
-    "event_hashtag": ["tag1", "tag2", "tag3"],
-    "big_image":[{"url": "#","main_title":"b1m","subtitle":"b1s","link":"b1l"},{"url": "#","main_title":"b2m","subtitle":"b2s","link":"b2l"}],
-    "middle_image":[{"url": "#","main_title":"m1m","subtitle":"m1s","link":"m1l"},{"url": "#","main_title":"m2m","subtitle":"m2s","link":"m2l"}]
-}
-
-function readFromJson(){
+var event_id;
+function readFromJson(eventsJsonObj){
+    event_id = eventsJsonObj.id;
     jQuery("#modal_name_input").val(eventsJsonObj.name);
+    if(eventsJsonObj.enabled==1) {
+        jQuery("#modal_status").text("On");
+        jQuery("#status_control_button").html("Disable");
+    }
+    else {
+        jQuery("#modal_status").text("Off")
+        jQuery("#status_control_button").html("Enable");
+    }
     jQuery("#modal_begin_time").val(eventsJsonObj.time_begin);
     jQuery("#modal_end_time").val(eventsJsonObj.time_end);
     jQuery("#modal_intro").val(eventsJsonObj.brief);
+    jQuery("#tag_pool").html("<button id=\"add_tag_button\" class=\"btn btn-primary\" onclick=\"addTag()\">Add</button>");
     for(var i=0; i<eventsJsonObj.event_hashtag.length; i++) jQuery("#tag_pool").prepend("<button class=\"tag_button btn btn-default\">" + eventsJsonObj.event_hashtag[i] + "</button>");
+    jQuery(".tag_button").click(function (event) {
+        event.target.remove();
+    });
+    jQuery("#big_img_div").html("");
     for(var i=0; i<eventsJsonObj.big_image.length; i++) {
         var bigImgJson = eventsJsonObj.big_image[i]
         jQuery("#big_img_div").append(getChunk(bigImgJson.url, bigImgJson.main_title, bigImgJson.subtitle, bigImgJson.link));
     }
+    jQuery("#middle_img_div").html("");
     for(var i=0; i<eventsJsonObj.middle_image.length; i++) {
         var middleImgJson = eventsJsonObj.middle_image[i]
         jQuery("#middle_img_div").append(getChunk(middleImgJson.url, middleImgJson.main_title, middleImgJson.subtitle, middleImgJson.link));
@@ -52,8 +231,14 @@ function readFromJson(){
 }
 
 function writeToJson(){
-    events = {
-        "id":0,
+    var status;
+    if (jQuery("#modal_status").text()=="On") status = 1;
+    else status = 0;
+    var tags = [];
+    for (var i=0; i<jQuery("#tag_pool button").length-1; i++) tags.push(jQuery("#tag_pool button")[i].innerHTML);
+    var events = {
+        "id":event_id,
+        "enabled": status,
         "name":jQuery("#modal_name_input").val(),
         "time_begin":jQuery("#modal_begin_time").val(),
         "time_end":jQuery("#modal_end_time").val(),
@@ -61,23 +246,143 @@ function writeToJson(){
         "event_hashtag":tags,
         "big_image":[],
         "middle_image":[]
-    }
+    };
 
     var bigImages = jQuery("#big_img_div .chunk_div");
     //var bigImages = jQuery("#big_img_div input[type=file]");
     for(var i=0; i<bigImages.length; i++){
-        events.big_image[i] = {"url": "#","main_title":bigImages[i].children[2].value,"subtitle":bigImages[i].children[3].value,"link":bigImages[i].children[4].value}
+        events.big_image[i] = {"url": jQuery(bigImages[i].children[1]).attr("src"),"main_title":bigImages[i].children[2].value,"subtitle":bigImages[i].children[3].value,"link":bigImages[i].children[4].value};
     }
     var middleImages = jQuery("#middle_img_div .chunk_div");
     for(var i=0; i<middleImages.length; i++){
-        events.middle_image[i] = {"url": "#","main_title":middleImages[i].children[2].value,"subtitle":middleImages[i].children[3].value,"link":middleImages[i].children[4].value}
+        events.middle_image[i] = {"url": jQuery(middleImages[i].children[1]).attr("src"),"main_title":middleImages[i].children[2].value,"subtitle":middleImages[i].children[3].value,"link":middleImages[i].children[4].value};
     }
-
+  
+    if(event_id == 0)
+    {
+      events.id = eventJSON.global_available_id;
+      eventJSON.global_available_id++;
+      eventJSON.events.push(events);
+    }
+    else
+    {
+      var j = 0;
+      for(;j<eventJSON.events.length;j++)
+      {
+        if(eventJSON.events[j].id == event_id)
+          break;
+      }
+      eventJSON.events[j] = events;
+    }
+    
+    var jsonString = JSON.stringify(eventJSON);
+    jQuery.ajax({
+      type:"POST",
+      data:{"data":jsonString},
+      url:"saveeventinfo.php",
+      success: function(result)
+      {
+        var resultJson = JSON.parse(result);
+        if(resultJson.status == "error")
+        {
+          alert(resultJson.message);
+          eventJSON = oldJSON;
+          return;
+        }
+        else
+        {
+          alert("Update succeeded!");
+          jQuery('#myModal').modal('hide');
+          oldJSON = eventJSON;
+          showPage(0);
+        }
+      },
+      error:function()
+      {
+        alert("error!");
+      }
+    });
     console.log(events);
 }
+
+//remove image div
+function closestDiv(){
+    ((event.currentTarget).closest("div")).remove();
+}
+
+function createEvent(){
+    var emptyJson = {
+        "id":0,
+        "enabled":0,
+        "name": "",
+        "time_begin":"",
+        "time_end":"",
+        "brief":"",
+        "event_hashtag": [],
+        "big_image":[],
+        "middle_image":[]
+    };
+    readFromJson(emptyJson);
+}
+
+//tag pool
+
+var input_open = false;
+var new_tag_content = "";
+
+function addTag() {
+
+    console.log("click");
+
+    if (input_open) {
+        new_tag_content = encodeURI(jQuery("#new_tag_input").val());
+        console.log(new_tag_content);
+        input_confirm();
+    }
+    else {
+        jQuery("#tag_pool").append("<input type=\"text\" name=\"input\" id=\"new_tag_input\">");
+        input_open = true;
+        jQuery("#new_tag_input").keypress(function (event) {
+            if (event.which == 13) {
+                new_tag_content = encodeURI(jQuery("#new_tag_input").val());
+                input_confirm();
+            }
+        });
+    }
+
+}
+
+function input_confirm() {
+    if (new_tag_content.length != 0) {
+        jQuery("#tag_pool").prepend("<button class=\"tag_button btn btn-default\">" + new_tag_content + "</button>");
+        jQuery("#new_tag_input").remove();
+        input_open = false;
+        jQuery(".tag_button").click(function (event) {
+            event.target.remove();
+        });
+    }
+}
+
 jQuery(document).ready(function() {
 
+  jQuery.ajax({
+    type:"GET",
+    url:"geteventinfo.php",
+    success:function(result)
+    {
+      eventJSON = JSON.parse(result);
+      oldJSON = JSON.parse(result);
+      showPage(0);
+    },
+    error:function()
+    {
+      alert("error!");
+    }
+  });
+  
     jQuery("#save_button").click(function(){
+        if(confirm("Are you sure to save?") == false)
+          return;
         writeToJson();
     });
 
@@ -97,6 +402,17 @@ jQuery(document).ready(function() {
 
     //chunk add
 
+    jQuery("#status_control_button").click(function(event){
+        if(jQuery("#modal_status").text()=="Off"){
+            jQuery("#modal_status").text("On");
+            jQuery("#status_control_button").html("Disable");
+        }
+        else{
+            jQuery("#modal_status").text("Off");
+            jQuery("#status_control_button").html("Enable");
+        }
+    });
+
     jQuery("#big_img_add_btn").click(function(){
         jQuery("#big_img_div").append(
             getChunk("", "", "", "")
@@ -105,62 +421,50 @@ jQuery(document).ready(function() {
 
     jQuery("#middle_img_add_btn").click(function(){
         jQuery("#middle_img_div").append(
-            "<div class=\"chunk_div\">" +
-            "<input type=\"file\" class=\"fileUpload\" onchange='UpLoadFile(event)'>" +
-            "<button class=\"remove_chunk_buttons\" onclick=\"test()\">Remove</button>" +
-            "<img class=\"entry_picture\" src=\"\" alt=\"No file chosen\"/>" +
-            "Main Title: <input type=\"text\" class=\"entry_input\">" +
-            "Subtitle: <input type=\"text\" class=\"entry_input\">" +
-            "Link: <input type=\"text\" class=\"entry_input\">" +
-            "</div>"
+            getChunk("", "", "", "")
         );
     });
 
-    //tag pool
-
     jQuery("#create_button").click(function () {
-        createInfluencer();
+        createEvent();
     });
 
-    jQuery("#reset_button").click(function () {
-        newJSON = oldJSON;
-        newJsonObj = JSON.parse(newJSON);
-        parseJSON(oldJsonObj);
-    });
 
-    var input_open = false;
-    var new_tag_content = "";
-
-    jQuery("#add_tag_button").click(function () {
-
-        if (input_open) {
-            new_tag_content = encodeURI(jQuery("#new_tag_input").val());
-            console.log(new_tag_content);
-            input_confirm();
-        }
-        else {
-            jQuery("#tag_pool").append("<input type=\"text\" name=\"input\" id=\"new_tag_input\">");
-            input_open = true;
-            jQuery("#new_tag_input").keypress(function (event) {
-                if (event.which == 13) {
-                    new_tag_content = encodeURI(jQuery("#new_tag_input").val());
-                    input_confirm();
-                }
-            });
-        }
-
-    });
-
-    function input_confirm() {
-        if (new_tag_content.length != 0) {
-            jQuery("#tag_pool").prepend("<button class=\"tag_button btn btn-default\">" + new_tag_content + "</button>");
-            tags.push(jQuery("#new_tag_input").val());
-            //newJsonObj.hashtag.push(jQuery("#new_tag_input").val());
-            jQuery("#new_tag_input").remove();
-            input_open = false;
-            jQuery(".tag_button").click(function (event) {
-                remove_hashtag_button(event)
-            });
-        }
-    }
+    ////tag pool
+    //
+    //var input_open = false;
+    //var new_tag_content = "";
+    //
+    //jQuery("#add_tag_button").click(function () {
+    //
+    //    if (input_open) {
+    //        new_tag_content = encodeURI(jQuery("#new_tag_input").val());
+    //        console.log(new_tag_content);
+    //        input_confirm();
+    //    }
+    //    else {
+    //        jQuery("#tag_pool").append("<input type=\"text\" name=\"input\" id=\"new_tag_input\">");
+    //        input_open = true;
+    //        jQuery("#new_tag_input").keypress(function (event) {
+    //            if (event.which == 13) {
+    //                new_tag_content = encodeURI(jQuery("#new_tag_input").val());
+    //                input_confirm();
+    //            }
+    //        });
+    //    }
+    //
+    //});
+    //
+    //function input_confirm() {
+    //    if (new_tag_content.length != 0) {
+    //        jQuery("#tag_pool").prepend("<button class=\"tag_button btn btn-default\">" + new_tag_content + "</button>");
+    //        tags.push(jQuery("#new_tag_input").val());
+    //        //newJsonObj.hashtag.push(jQuery("#new_tag_input").val());
+    //        jQuery("#new_tag_input").remove();
+    //        input_open = false;
+    //        jQuery(".tag_button").click(function (event) {
+    //            remove_hashtag_button(event);
+    //        });
+    //    }
+    //}
 });

@@ -13,45 +13,22 @@
 
 <div class="container">
 
-    <button id="create_button" class="btn btn-link" data-toggle="modal" data-target="#myModal">Create New Influencer
+    <button id="create_button" class="btn btn-link" data-toggle="modal" data-target="#myModal">Create New Event
     </button>
     <br>
     <br>
 
-    <table class="table table-striped">
+    <table class="table" id="myTable">
         <thead>
         <tr>
-            <th>Name</th>
-            <th>Time Begin</th>
-            <th>Time End</th>
-            <th>Brief Introduction</th>
+            <th id="name_head" onclick="sortTable(event)">Name</th>
+            <th id="time_begin_head" onclick="sortTable(event)">Time Begin</th>
+            <th id="time_end_head" onclick="sortTable(event)">Time End</th>
+            <th id="brief_head" onclick="sortTable(event)">Brief Introduction</th>
             <th>Operations</th>
         </tr>
         </thead>
-        <tbody>
-        <tr>
-            <td>John</td>
-            <td>Doe</td>
-            <td>john@example.com</td>
-            <td>Here is a brief. It should not be too long, but not too short also. So let me test ~~~</td>
-            <td>
-                <button class="btn btn-link" id="editbutton6" data-toggle="modal" data-target="#myModal"
-                        onclick="viewandedit(event)">view&amp;edit
-                </button>
-                <!--<br>-->
-                <button class="btn btn-link" id="deletebutton6" onclick="deleteentry(event)">disable</button>
-            </td>
-        </tr>
-        <tr>
-            <td>Mary</td>
-            <td>Moe</td>
-            <td>mary@example.com</td>
-        </tr>
-        <tr>
-            <td>July</td>
-            <td>Dooley</td>
-            <td>july@example.com</td>
-        </tr>
+        <tbody id="tableBody">
         </tbody>
     </table>
 </div>
@@ -59,8 +36,8 @@
 <div class="container">
     <nav>
         <ul class="pager">
-            <li><a href="#">Previous</a></li>
-            <li><a href="#">Next</a></li>
+            <li><button id="previous_button" class="btn btn-secondary" onclick="previousPage()">Previous</button></li>
+            <li><button id="next_button" class="btn btn-secondary" onclick="nextPage()">Next</button></li>
         </ul>
     </nav>
 </div>
@@ -80,6 +57,10 @@
 
                 <div class="modal-body">
 
+                    <!--status-->
+                    <div class="modal-row">Status:&nbsp;<span id="modal_status">On</span>
+                        <button class="btn btn-link" id="status_control_button">disable</button>
+                    </div>
 
                     <!--name-->
                     <div class="modal-row">Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input id="modal_name_input" type="text"></div>
@@ -108,13 +89,13 @@
                     <div class="modal-row">
                         <h5>Big Images</h5>
                         <div id="big_img_div">
-                            <div class="chunk_div">
-                                <input type="file" class="fileUpload" onchange='UpLoadFile(event)'>
-                                <img class="entry_picture" src="" alt="No file chosen"/>
-                                Main Title: <input type="text" class="entry_input" value="">
-                                Subtitle: <input type="text" class="entry_input" value="">
-                                Link: <input type="text" class="entry_input" value="">
-                            </div>
+                            <!--<div class="chunk_div">-->
+                                <!--<input type="file" class="fileUpload" onchange='UpLoadFile(event)'>-->
+                                <!--<img class="entry_picture" src="" alt="No file chosen"/>-->
+                                <!--Main Title: <input type="text" class="entry_input" value="">-->
+                                <!--Subtitle: <input type="text" class="entry_input" value="">-->
+                                <!--Link: <input type="text" class="entry_input" value="">-->
+                            <!--</div>-->
                         </div>
                         <div class="button_right_wrapper">
                             <button id="big_img_add_btn" class="btn btn-primary">Add</button>
@@ -125,13 +106,13 @@
                     <div class="modal-row">
                         <h5>Middle Images</h5>
                         <div id="middle_img_div">
-                            <div class="chunk_div">
-                                <input type="file" class="fileUpload" onchange='UpLoadFile(event)'>
-                                <img class="entry_picture" src="" alt="No file chosen"/>
-                                Main Title: <input type="text" class="entry_input" value="">
-                                Subtitle: <input type="text" class="entry_input" value="">
-                                Link: <input type="text" class="entry_input" value="">
-                            </div>
+                            <!--<div class="chunk_div">-->
+                                <!--<input type="file" class="fileUpload" onchange='UpLoadFile(event)'>-->
+                                <!--<img class="entry_picture" src="" alt="No file chosen"/>-->
+                                <!--Main Title: <input type="text" class="entry_input" value="">-->
+                                <!--Subtitle: <input type="text" class="entry_input" value="">-->
+                                <!--Link: <input type="text" class="entry_input" value="">-->
+                            <!--</div>-->
                         </div>
                         <div class="button_right_wrapper">
                             <button id="middle_img_add_btn" class="btn btn-primary">Add</button>
@@ -140,7 +121,7 @@
 
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal" id="save_button">Save</button>
+                    <button type="button" class="btn btn-primary" id="save_button">Save</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 </div>
             </div>
